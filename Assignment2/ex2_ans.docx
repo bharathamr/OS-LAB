@@ -1,0 +1,243 @@
+﻿1) cp : 
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+void main(int argn,char *argv[])
+{
+	int r,fd1,ch,flag=0;
+	char buf[50];
+	if(argn < 4)
+	{
+		printf("arguments insufficient\n");
+		exit(0);
+	}
+	
+	int fd = open(argv[1], O_RDONLY);
+	
+	if(fd == -1)
+		printf("Error---File is not opened\n");
+
+	fd1=open(argv[2],O_WRONLY);
+   
+     	if(fd1 != -1)
+    	{
+      		flag=1;
+      		//printf("\nDestination File already has contents\n");
+   	}
+	else
+	{
+		fd1=creat(argv[2],00777);
+		fd1=open(argv[2],O_WRONLY);
+	}
+	
+	if(strcmp(argv[3],"no") == 0)
+	{
+		while((r=read(fd,buf,1))>0)
+			write(fd1,buf,1); 
+		printf("The file is copied\n");
+	}
+	else if(strcmp(argv[3],"-i") == 0)
+	{
+		if(flag == 1)
+		{
+			printf("Do you want to override the destination file or no\n");
+			printf("Enter\n1: to override\n0 : to exit\nyour choice : ");
+			scanf("%d",&ch);
+			if(ch == 1)
+			{
+				while((r=read(fd,buf,1))>0)
+					write(fd1,buf,1); 
+			}
+			else
+				exit(0);
+			printf("The file is copied\n");
+		}
+		else
+		{
+			while((r=read(fd,buf,1))>0)
+				write(fd1,buf,1); 
+			printf("The file is copied\n");
+
+		}
+
+	}
+	
+	close(fd1);
+	close(fd);
+
+}
+
+
+2) ls : 
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include <dirent.h>
+#include<ctype.h>
+#include<sys/types.h>
+
+void main(int argc,char *argv[])
+{
+
+ int n;
+ DIR *d,*l;
+ struct dirent *s,*m;
+ char buffer[50];
+char arr[10][100];
+int i=0;
+ d=opendir(argv[1]);
+ while((s=readdir(d))!=NULL)
+ {
+        if(argc == 2){
+                    printf("%s\n",s->d_name); 
+	}
+        else if(argc == 3)
+		{
+        		if(strcmp(argv[2],"-R")==0)
+			{
+				if(s-> d_type == 4)
+				{
+					strcpy(arr[i],s->d_name);
+					i++;
+				}
+                    		printf("%s\n",s->d_name); 
+
+			}
+        		else if(strcmp(argv[2],"-l")==0)
+			{
+		          	printf("%d %d %s\n",s->d_type,s->d_reclen,s->d_name);
+			}
+
+		}
+       	else
+		printf("\nInsuffiecient number of arguments\n");
+	
+ }
+ printf("\n");
+ closedir(d);
+ if(argc == 3)
+ {
+	 if(strcmp(argv[2],"-R")==0)
+	 {
+	 	for(int j=0;j<i;j++)
+		{
+			strcpy(buffer,argv[1]);
+			strcat(buffer,"/");
+			strcat(buffer,arr[j]);
+			printf("\n%s : \n",buffer);
+			l=opendir(buffer);
+			while((m=readdir(l))!=NULL)
+			{
+				printf("%s\n",m->d_name);
+
+			}
+			printf("\n");
+			closedir(l);
+
+
+		}
+
+
+	 }
+ }
+}
+
+
+3) grep : 
+
+
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include <sys/types.h> 
+#include <sys/stat.h>
+#include <unistd.h>
+#include<string.h>
+#include <fcntl.h>
+
+void match_pattern(char *argv[] ,int argc ,int op)
+{
+	char argu[4][100];
+    for (int i=1;i<argc;i++)
+    {
+	 	strcpy(argu[i],argv[i]);
+    }
+    if(argv[1][0]!='-')
+    {
+		strcpy(argu[3],argu[2]);
+		strcpy(argu[2],argu[1]);
+    }
+   
+    int fd,r,j=0,count=0,co=1;
+    char temp,line[100];
+    if((fd=open(argu[3],O_RDONLY)) != -1)
+    {
+        while((r=read(fd,&temp,sizeof(char)))!= 0)
+        {
+            if(temp!='\n')
+            {
+                line[j]=temp;
+                j++;
+            }
+            else
+            {
+		line[j]='\0';
+                if(strstr(line,argu[2])!=NULL && op ==1)
+                    printf("%s\n",line);
+				else if(strstr(line,argu[2])!=NULL && op ==4)
+                    printf("%d - %s\n",co,line);
+				else if(strstr(line,argu[2])==NULL && op ==2)
+                    printf("%s\n",line);
+				else if(strstr(line,argu[2])!=NULL && op ==3)
+                    count++;
+				
+                memset(line,0,sizeof(line));
+                j=0;
+				co++;
+            }
+
+        }
+		if(op==3)
+			printf("\nThe given word occured in %d lines\n",count);
+    }   
+}
+
+int main(int argc,char *argv[])
+{
+    struct stat stt;
+    if(argc==3)
+    {
+        if(stat(argv[2],&stt)==0)
+            match_pattern(argv,argc,1);
+        else 
+        {
+            perror("stat()");
+            exit(1);
+        }
+    }
+	else if(argc==4)
+    {
+        if(stat(argv[3],&stt)==0 && argv[1][0]=='-')
+			if(argv[1][1]=='v')
+            	match_pattern(argv,argc,2);
+			else if(argv[1][1]=='c')
+				match_pattern(argv,argc,3);
+			else if(argv[1][1]=='n')
+				match_pattern(argv,argc,4);
+        else 
+        {
+            perror("stat()");
+            exit(1);
+        }
+    }
+    return 0;
+}

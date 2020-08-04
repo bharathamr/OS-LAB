@@ -1,0 +1,352 @@
+//producer : 
+#include <stdio.h>
+#include <stdlib.h>
+#include<time.h>
+#include <string.h>
+#include <semaphore.h>
+#include <pthread.h> // for semaphore operations sem_init,sem_wait,sem_post
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/wait.h>
+#include <sys/errno.h>
+#include <sys/types.h>
+extern int errno;
+#define SIZE 10 /* size of the shared buffer*/
+#define VARSIZE 1 /* size of shared variable=1byte*/
+#define INPUTSIZE 20
+#define SHMPERM 0666 /* shared memory permissions */
+int segid; /* id for shared memory bufer */
+int empty_id;
+int full_id;
+int mutex_id;
+int * buff;
+int input_string;
+sem_t *empty;
+sem_t *full;
+sem_t *mutex;
+int p=0,c=0;
+//
+// Producer function
+//
+void produce()
+{
+		if(input_string==0)
+		{
+			printf("\n Producer %d exited \n",getpid());
+			wait(NULL);
+			exit(1);
+		}
+		srand(time(0));
+		for(int i=0;i<input_string;i++)
+		{
+			printf("\nProducer %d trying to aquire Semaphore Empty \n",getpid());
+			sem_wait(empty);
+			printf("\nProducer %d successfully aquired Semaphore Empty \n",getpid());
+			printf("\nProducer %d trying to aquire Semaphore Mutex \n",getpid());
+			sem_wait(mutex);
+			printf("\nProducer %d successfully aquired Semaphore Mutex \n",getpid());
+			buff[p]=random()%input_string;
+			printf("\nProducer %d Produced Item [ %d ] \n",getpid(),buff[p]);
+			p++;
+			printf("\nItems in Buffer %d \n",input_string);
+			sem_post(mutex);
+			printf("\nProducer %d released Semaphore Mutex \n",getpid());
+			sem_post(full);
+			printf("\nProducer %d released Semaphore Full \n",getpid());
+		}
+} //producer
+
+int main()
+{
+	int i=0;
+	int id1;
+	pid_t temp_pid;
+	segid = shmget (1001, SIZE, IPC_CREAT | IPC_EXCL | SHMPERM );
+	empty_id=shmget(1002,sizeof(sem_t),IPC_CREAT|IPC_EXCL|
+	SHMPERM);
+	full_id=shmget(1003,sizeof(sem_t),IPC_CREAT|IPC_EXCL|
+	SHMPERM);
+	mutex_id=shmget(1004,sizeof(sem_t),IPC_CREAT|IPC_EXCL|
+	SHMPERM);
+	buff = shmat( segid, (int *)0, 0 );
+	empty = shmat(empty_id,(int *)0,0);
+	full = shmat(full_id,(int *)0,0);
+	mutex = shmat(mutex_id,(int *)0,0);
+	// Initializing Semaphores Empty , Full & Mutex
+	sem_init(empty,1,SIZE);
+	sem_init(full,1,0);
+	sem_init(mutex,1,1);
+	printf("\n Main Process Started \n");
+	printf("\n Enter the no of numbers : ");
+	
+	id1=shmget(112,50,IPC_CREAT | 00666);
+	input_string=shmat(id1,NULL,0);
+	scanf("%d",&input_string);
+	printf("number of numbers : %d",input_string);
+		produce();
+	shmdt(input_string);
+	shmdt(buff);
+	shmdt(empty);
+	shmdt(full);
+	shmdt(mutex);
+	return(0);
+} //main
+
+
+//consumer : 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <semaphore.h>
+#include <pthread.h> // for semaphore operations sem_init,sem_wait,sem_post
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/wait.h>
+#include <sys/errno.h>
+#include <sys/types.h>
+extern int errno;
+#define SIZE 10 /* size of the shared buffer*/
+#define VARSIZE 1 /* size of shared variable=1byte*/
+#define INPUTSIZE 20
+#define SHMPERM 0666 /* shared memory permissions */
+int segid; /* id for shared memory bufer */
+int empty_id;
+int full_id;
+int mutex_id;
+int * buff;
+int input_string;
+sem_t *empty;
+sem_t *full;
+sem_t *mutex;
+int p=0,c=0;
+// Consumer function
+//
+void consume()
+{
+	
+		if(input_string==0)
+		{
+			printf("\n Producer %d exited \n",getpid());
+			wait(NULL);
+			exit(1);
+		}
+		for(int j=0;j<input_string;j++)
+		{
+			printf("\nConsumer %d trying to aquire Semaphore Full \n",getpid());
+			sem_wait(full);
+			printf("\nConsumer %d successfully aquired Semaphore Full \n",getpid());
+			printf("\nConsumer %d trying to aquire Semaphore Mutex \n",getpid());
+			sem_wait(mutex);
+			printf("\nConsumer %d successfully aquired Semaphore Mutex\n",getpid());
+			printf("\nConsumer %d Consumed Item [ %d ] \n",getpid(),buff[c]);
+			buff[c]=' ';
+			c++;
+			sem_post(mutex);
+			printf("\nConsumer %d released Semaphore Mutex \n",getpid());
+			sem_post(empty);
+			printf("\nConsumer %d released Semaphore Empty \n",getpid());
+		}
+		return;
+} //consumer fn
+//--------------------------------------------------------------
+//Main function 
+//---------------------------------------------------------------
+int main()
+{
+	int i=0;
+	int id1;
+	pid_t temp_pid;
+	segid = shmget (1001, SIZE,0);
+	empty_id=shmget(1002,sizeof(sem_t),0);
+	full_id=shmget(1003,sizeof(sem_t),0);
+	mutex_id=shmget(1004,sizeof(sem_t),0);
+	buff = shmat( segid, (int *)0, 0 );
+	empty = shmat(empty_id,(int *)0,0);
+	full = shmat(full_id,(int *)0,0);
+	mutex = shmat(mutex_id,(int *)0,0);
+	id1=shmget(112,50,0);
+	input_string=shmat(id1,NULL,0);
+	// Initializing Semaphores Empty , Full & Mutex
+	consume();
+	shmdt(buff);
+	shmdt(empty);
+	shmdt(full);
+	shmdt(mutex);
+	shmctl(segid, IPC_RMID, NULL);
+	semctl( empty_id, 0, IPC_RMID, NULL);
+	semctl( full_id, 0, IPC_RMID, NULL);
+	semctl( mutex_id, 0, IPC_RMID, NULL);
+	sem_destroy(empty);
+	sem_destroy(full);
+	sem_destroy(mutex);
+	printf("\n Main process exited \n\n");
+	return(0);
+} //main
+
+/* 
+output : 
+
+producer output : 
+
+ Main Process Started 
+
+ Enter the no of numbers : 5
+number of numbers : 5
+Producer 3560 trying to aquire Semaphore Empty 
+
+Producer 3560 successfully aquired Semaphore Empty 
+
+Producer 3560 trying to aquire Semaphore Mutex 
+
+Producer 3560 successfully aquired Semaphore Mutex 
+
+Producer 3560 Produced Item [ 3 ] 
+
+Items in Buffer 5 
+
+Producer 3560 released Semaphore Mutex 
+
+Producer 3560 released Semaphore Full 
+
+Producer 3560 trying to aquire Semaphore Empty 
+
+Producer 3560 successfully aquired Semaphore Empty 
+
+Producer 3560 trying to aquire Semaphore Mutex 
+
+Producer 3560 successfully aquired Semaphore Mutex 
+
+Producer 3560 Produced Item [ 1 ] 
+
+Items in Buffer 5 
+
+Producer 3560 released Semaphore Mutex 
+
+Producer 3560 released Semaphore Full 
+
+Producer 3560 trying to aquire Semaphore Empty 
+
+Producer 3560 successfully aquired Semaphore Empty 
+
+Producer 3560 trying to aquire Semaphore Mutex 
+
+Producer 3560 successfully aquired Semaphore Mutex 
+
+Producer 3560 Produced Item [ 2 ] 
+
+Items in Buffer 5 
+
+Producer 3560 released Semaphore Mutex 
+
+Producer 3560 released Semaphore Full 
+
+Producer 3560 trying to aquire Semaphore Empty 
+
+Producer 3560 successfully aquired Semaphore Empty 
+
+Producer 3560 trying to aquire Semaphore Mutex 
+
+Producer 3560 successfully aquired Semaphore Mutex 
+
+Producer 3560 Produced Item [ 0 ] 
+
+Items in Buffer 5 
+
+Producer 3560 released Semaphore Mutex 
+
+Producer 3560 released Semaphore Full 
+
+Producer 3560 trying to aquire Semaphore Empty 
+
+Producer 3560 successfully aquired Semaphore Empty 
+
+Producer 3560 trying to aquire Semaphore Mutex 
+
+Producer 3560 successfully aquired Semaphore Mutex 
+
+Producer 3560 Produced Item [ 1 ] 
+
+Items in Buffer 5 
+
+Producer 3560 released Semaphore Mutex 
+
+Producer 3560 released Semaphore Full 
+
+
+consumer output : 
+
+Consumer 3645 trying to aquire Semaphore Full 
+
+Consumer 3645 successfully aquired Semaphore Full 
+
+Consumer 3645 trying to aquire Semaphore Mutex 
+
+Consumer 3645 successfully aquired Semaphore Mutex
+
+Consumer 3645 Consumed Item [ 3 ] 
+
+Consumer 3645 released Semaphore Mutex 
+
+Consumer 3645 released Semaphore Empty 
+
+Consumer 3645 trying to aquire Semaphore Full 
+
+Consumer 3645 successfully aquired Semaphore Full 
+
+Consumer 3645 trying to aquire Semaphore Mutex 
+
+Consumer 3645 successfully aquired Semaphore Mutex
+
+Consumer 3645 Consumed Item [ 1 ] 
+
+Consumer 3645 released Semaphore Mutex 
+
+Consumer 3645 released Semaphore Empty 
+
+Consumer 3645 trying to aquire Semaphore Full 
+
+Consumer 3645 successfully aquired Semaphore Full 
+
+Consumer 3645 trying to aquire Semaphore Mutex 
+
+Consumer 3645 successfully aquired Semaphore Mutex
+
+Consumer 3645 Consumed Item [ 2 ] 
+
+Consumer 3645 released Semaphore Mutex 
+
+Consumer 3645 released Semaphore Empty 
+
+Consumer 3645 trying to aquire Semaphore Full 
+
+Consumer 3645 successfully aquired Semaphore Full 
+
+Consumer 3645 trying to aquire Semaphore Mutex 
+
+Consumer 3645 successfully aquired Semaphore Mutex
+
+Consumer 3645 Consumed Item [ 0 ] 
+
+Consumer 3645 released Semaphore Mutex 
+
+Consumer 3645 released Semaphore Empty 
+
+Consumer 3645 trying to aquire Semaphore Full 
+
+Consumer 3645 successfully aquired Semaphore Full 
+
+Consumer 3645 trying to aquire Semaphore Mutex 
+
+Consumer 3645 successfully aquired Semaphore Mutex
+
+Consumer 3645 Consumed Item [ 1 ] 
+
+Consumer 3645 released Semaphore Mutex 
+
+Consumer 3645 released Semaphore Empty 
+
+*/
+

@@ -1,0 +1,585 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+
+typedef struct mem
+{
+	int start;
+	int end;
+	int size;
+	int alloc;
+	char status[2];
+	struct mem *next;
+}memory;
+
+struct mem* input(int part)
+{
+	memory *p;
+	p=(struct mem*)malloc(sizeof(struct mem));
+	for(int i=0;i<part;i++)
+	{
+		memory *temp,*temp1;
+		temp1 = p;
+		char h[2] = "H";
+		temp=(struct mem*)malloc(sizeof(struct mem)*part);
+		printf("Enter the starting and ending address : ");
+		scanf("%d %d",&temp->start,&temp->end);
+		temp->size = temp->end-temp->start;
+		strcpy(temp->status,h);
+		while(temp1 -> next != NULL)
+			temp1=temp1->next;
+		temp -> next = temp1->next;
+		temp1->next = temp;
+			
+	}
+	return p;
+
+
+
+}
+
+void display(memory *dis)
+{
+	printf("Physical memory\n");
+	memory *s=dis->next;
+	dis=dis->next;
+	while(dis != NULL)
+	{
+		printf("|%8s",dis->status);
+		dis=dis->next;
+	
+	}
+	printf("|\n");
+	printf("%d",s->start);
+	while(s != NULL)
+	{
+		printf("%9d",s->end);
+		s=s->next;
+	
+	}
+	printf("\n");
+}
+
+void ffalloc(memory *pm,char p[2],int si)
+{
+	memory *s=pm;
+	memory *temp;
+	temp=(struct mem*)malloc(sizeof(struct mem));
+	strcpy(temp -> status ,p);
+	temp -> size = 0;
+	temp->alloc = si;
+	while( s->next != NULL && si >= s -> next->size)
+	{
+		s=s->next;
+	}
+	if(s->next == NULL && s->size < si)
+	{
+		printf("not allocated\n");
+		return;
+	}
+	if(s->next->size == si)
+	{
+		strcpy(s->next->status,temp->status);
+	}
+	else
+	{
+	temp-> start = s->next->start;
+	temp->end = temp->start+si;
+	s->next->size -= si;
+	s->next->start +=si;
+	temp -> next = s->next;
+	s->next = temp;
+	}
+
+}
+
+void bfalloc(memory *pm,char p[2],int si)
+{
+	memory *l = pm->next;
+	int min = 999;
+	int sir;
+	while(l->next != NULL)
+	{
+		if((l->size - si) < min && (l->size -si ) >= 0)
+		{
+			min = l->size - si;
+			sir = l->size;
+		}
+		l = l->next;
+
+	}
+	memory *s=pm;
+	memory *temp;
+	temp=(struct mem*)malloc(sizeof(struct mem));
+	strcpy(temp -> status ,p);
+	temp -> size = 0;
+	temp->alloc = si;
+	while( s->next != NULL && sir != s -> next->size)
+	{
+		s=s->next;
+	}
+	if(s->next == NULL)
+	{
+		printf("not allocated\n");
+		return;
+	}
+	if(s->next->size - si == 0)
+	{
+		strcpy(s->next->status,temp->status);
+	}
+	else
+	{
+	temp-> start = s->next->start;
+	temp->end = temp->start+si;
+	s->next->size -= si;
+	s->next->start +=si;
+	temp -> next = s->next;
+	s->next = temp;
+	}
+
+}
+
+void wfalloc(memory *pm,char p[2],int si)
+{
+	memory *l = pm->next;
+	int max = 0;
+	int sir;
+	while(l->next != NULL)
+	{
+		if((l->size - si) > max)
+		{
+			max = l->size - si;
+			sir = l->size;
+		}
+		l = l->next;
+
+	}
+	memory *s=pm;
+	memory *temp;
+	temp=(struct mem*)malloc(sizeof(struct mem));
+	strcpy(temp -> status ,p);
+	temp -> size = 0;
+	temp->alloc = si;
+	while( s->next != NULL && sir != s -> next->size)
+	{
+		s=s->next;
+	}
+	if(s->next == NULL)
+	{
+		printf("not allocated\n");
+		return;
+	}
+	if(s->next->size - si == 0)
+	{
+		strcpy(s->next->status,temp->status);
+	}
+	else
+	{
+	temp-> start = s->next->start;
+	temp->end = temp->start+si;
+	s->next->size -= si;
+	s->next->start +=si;
+	temp -> next = s->next;
+	s->next = temp;
+	}
+
+}
+
+void freedisplay(memory *dis,char cid[2])
+{
+
+	memory *m = dis->next;
+	while(m != NULL)
+	{
+		if(strcmp(m->status,cid) == 0)
+		{
+			printf("Alloted Memory\n");
+			printf("|%8s|\n",m->status);
+			printf("%d%9d\n",m->start,m->end);
+		}
+
+		m=m->next;
+	}
+	printf("free pool\n");
+	memory *s=dis->next;
+	dis=dis->next;
+	while(dis != NULL)
+	{
+
+		if(strcmp(dis -> status,cid) != 0)
+		{
+			printf("|%8s",dis->status);
+			
+		}
+		else
+		{
+			printf("|%8s","");
+		}
+		dis=dis->next;
+	
+	}
+	printf("|\n");
+	printf("%d",s->start);
+
+	while(s != NULL)
+	{
+		printf("%9d",s->end);
+		s=s->next;
+	
+	}
+	printf("\n");	
+
+
+}
+
+void deallocate(memory *dis,char cid[2])
+{
+	memory *m = dis->next;
+	while(m != NULL)
+	{
+		if(strcmp(m->status,cid) == 0)
+		{
+			strcpy(m->status,"H");
+			m->size = m->alloc;
+			printf("--------Deallocated-------\n");
+			return;
+		}
+
+		m=m->next;
+	}
+	printf("--------Process Not Found For Deallocation-------\n");	
+
+}
+
+void coalescing(memory *node)
+{
+	memory *ss = node -> next;
+	while(ss !=NULL && ss-> next != NULL)
+	{
+		if(strcmp(ss->status,ss->next->status) == 0)
+		{
+			ss->end = ss-> next -> end;
+			ss -> next = ss->next->next;
+
+		}
+		else
+			ss=ss->next;
+
+
+	}
+
+	printf("\n\n---------Coalescing Done-----------\n\n");
+
+
+}
+void main()
+{
+	int partition;
+	memory *physical;
+	memory *dummy;
+	physical = (struct mem*)malloc(sizeof(struct mem));
+	printf("Enter the number of partitions : ");
+	scanf("%d",&partition);
+	dummy = input(partition);
+	int choice;
+	while(1)
+	{
+		physical = dummy;
+		freedisplay(physical,"P");
+		display(physical);
+		printf("Choose the algorithm to work\n1. First Fit\n2. Best Fit\n3. Worst Fit\n4.Exit\nEnter your option : ");
+		scanf("%d",&choice);
+		if(choice == 4)
+			exit(0);
+		while(1)
+		{
+			
+			int op;
+			printf("Enter\n1:Entry/Allocate\n2:Exit/Deallocate\n3:Display\n4:Coalescing of Holes\n5:Back to algorithm\nYour option : ");
+			scanf("%d",&op);
+
+			if(op == 1)
+			{
+
+				char id[2];
+				int size;
+				printf("Enter Process id : ");
+				scanf("%s",id);
+				printf("Enter the size needed : ");
+				scanf("%d",&size);
+				if(choice == 1)
+					ffalloc(physical,id,size);
+				if(choice == 2)
+					bfalloc(physical,id,size);
+				if(choice == 3)
+					wfalloc(physical,id,size);
+
+				freedisplay(physical,id);
+				display(physical);
+
+			}
+			if(op==2)
+			{
+				char id[2];
+				printf("Enter the process id : ");
+				scanf("%s",id);
+				deallocate(physical,id);
+				freedisplay(physical,id);
+				display(physical);
+
+			}
+			if(op == 3)
+				display(physical);
+
+			if(op == 4)
+				coalescing(physical);
+			if(op == 5)
+				break;
+			
+		
+		
+		}
+	}
+
+}
+
+/*output : 
+
+
+amr@ubuntu:~/Desktop$ ./memout
+Enter the number of partitions : 5
+Enter the starting and ending address : 100 110
+Enter the starting and ending address : 110 112
+Enter the starting and ending address : 112 117
+Enter the starting and ending address : 117 120
+Enter the starting and ending address : 120 125
+free pool
+|       H|       H|       H|       H|       H|
+100      110      112      117      120      125
+Physical memory
+|       H|       H|       H|       H|       H|
+100      110      112      117      120      125
+Choose the algorithm to work
+1. First Fit
+2. Best Fit
+3. Worst Fit
+4.Exit
+Enter your option : 1
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 1
+Enter Process id : P1
+Enter the size needed : 5
+Alloted Memory
+|      P1|
+100      105
+free pool
+|        |       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Physical memory
+|      P1|       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 2
+Enter the process id : P2
+--------Process Not Found For Deallocation-------
+free pool
+|      P1|       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Physical memory
+|      P1|       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 3
+Physical memory
+|      P1|       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 5
+free pool
+|      P1|       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Physical memory
+|      P1|       H|       H|       H|       H|       H|
+100      105      110      112      117      120      125
+Choose the algorithm to work
+1. First Fit
+2. Best Fit
+3. Worst Fit
+4.Exit
+Enter your option : 2
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 1
+Enter Process id : P2
+Enter the size needed : 1
+Alloted Memory
+|      P2|
+110      111
+free pool
+|      P1|       H|        |       H|       H|       H|       H|
+100      105      110      111      112      117      120      125
+Physical memory
+|      P1|       H|      P2|       H|       H|       H|       H|
+100      105      110      111      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 2
+Enter the process id : P2
+--------Deallocated-------
+free pool
+|      P1|       H|       H|       H|       H|       H|       H|
+100      105      110      111      112      117      120      125
+Physical memory
+|      P1|       H|       H|       H|       H|       H|       H|
+100      105      110      111      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 5
+free pool
+|      P1|       H|       H|       H|       H|       H|       H|
+100      105      110      111      112      117      120      125
+Physical memory
+|      P1|       H|       H|       H|       H|       H|       H|
+100      105      110      111      112      117      120      125
+Choose the algorithm to work
+1. First Fit
+2. Best Fit
+3. Worst Fit
+4.Exit
+Enter your option : 3
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 1
+Enter Process id : P3
+Enter the size needed : 4
+Alloted Memory
+|      P3|
+105      109
+free pool
+|      P1|        |       H|       H|       H|       H|       H|       H|
+100      105      109      110      111      112      117      120      125
+Physical memory
+|      P1|      P3|       H|       H|       H|       H|       H|       H|
+100      105      109      110      111      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 2
+Enter the process id : P1
+--------Deallocated-------
+free pool
+|       H|      P3|       H|       H|       H|       H|       H|       H|
+100      105      109      110      111      112      117      120      125
+Physical memory
+|       H|      P3|       H|       H|       H|       H|       H|       H|
+100      105      109      110      111      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 2
+Enter the process id : P4
+--------Process Not Found For Deallocation-------
+free pool
+|       H|      P3|       H|       H|       H|       H|       H|       H|
+100      105      109      110      111      112      117      120      125
+Physical memory
+|       H|      P3|       H|       H|       H|       H|       H|       H|
+100      105      109      110      111      112      117      120      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 4
+
+
+---------Coalescing Done-----------
+
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 3
+Physical memory
+|       H|      P3|       H|
+100      105      109      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 2
+Enter the process id : P3
+--------Deallocated-------
+free pool
+|       H|       H|       H|
+100      105      109      125
+Physical memory
+|       H|       H|       H|
+100      105      109      125
+Enter
+1:Entry/Allocate
+2:Exit/Deallocate
+3:Display
+4:Coalescing of Holes
+5:Back to algorithm
+Your option : 5
+free pool
+|       H|       H|       H|
+100      105      109      125
+Physical memory
+|       H|       H|       H|
+100      105      109      125
+Choose the algorithm to work
+1. First Fit
+2. Best Fit
+3. Worst Fit
+4.Exit
+Enter your option : 4
+*/

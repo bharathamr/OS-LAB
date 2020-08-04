@@ -1,0 +1,250 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+void main()
+{
+	int n,m;
+	int alloc[10][10];
+	int max[10][10];
+	int need[10][10];
+	int avail[1][10];
+	int choice;
+	printf("BANKERs ALGORITHM\n");
+	printf("1.Read Data\n2.Print Data\n3.Safety Sequence\n4.exit\n");
+	while(1)
+	{
+		printf("Enter the option : ");
+		scanf("%d",&choice);
+		if(choice == 4)
+			exit(0);
+		if(choice == 1)
+		{
+			printf("Number of processes : ");
+			scanf("%d",&n);
+			printf("Number of resources : ");
+			scanf("%d",&m);
+			for(int i=0;i<m;i++)
+			{
+				printf("Number of Available Instances of %c : ",65+i);
+				scanf("%d",&avail[0][i]);
+			}
+			for(int i=0;i<n;i++)
+			{
+				printf("Maximum requirement for P%d : ",i);
+				for(int j=0;j<m;j++)
+					scanf("%d",&max[i][j]);
+			}
+			for(int i=0;i<n;i++)
+			{
+				printf("Allocated instances to P%d : ",i);
+				for(int j=0;j<m;j++)
+					scanf("%d",&alloc[i][j]);
+			}
+			for(int i=0;i<n;i++)
+			{
+				for(int j=0;j<m;j++)
+					need[i][j]=max[i][j]-alloc[i][j];
+			}
+		}
+		if(choice == 2)
+		{
+			printf("pid	Alloc	Max	Need	Avail\n");
+			printf("	");
+			for(int l=0;l<4;l++)
+			{
+				for(int k=0;k<m;k++)
+				{
+					printf("%c ",65+k);
+				}
+				printf("	");
+			}
+			printf("\n");
+			for(int s=0;s<n;s++)
+			{
+				printf("P%d	",s);
+				for(int k=0;k<m;k++)
+				{
+					printf("%d ",alloc[s][k]);
+				}
+				printf("	");
+				for(int k=0;k<m;k++)
+				{
+					printf("%d ",max[s][k]);
+				}
+				printf("	");
+				for(int k=0;k<m;k++)
+				{
+					printf("%d ",need[s][k]);
+				}
+				printf("	");
+				if(s==0)
+				{
+					for(int k=0;k<m;k++)
+					{
+						printf("%d ",avail[s][k]);
+					}
+
+				}
+				printf("\n");		
+
+
+			}
+
+		}
+		if(choice == 3)
+		{
+
+			int choice1;
+			int no;
+			int request[m];
+			printf("Enter\n1 : To make request and check for safe sequence\n2 : to check only safe sequence\nyour choice : ");
+			scanf("%d",&choice1);
+			if(choice1 == 1)
+			{
+				printf("Enter the process no to request : ");
+				scanf("%d",&no);
+				printf("Enter the new allocation request : ");
+				for(int r=0;r<m;r++)
+					scanf("%d",&request[r]);
+				int possible = 0;
+				for(int rr=0;rr<m;rr++)
+				{
+					if(request[rr]<=avail[0][rr])
+						possible++;
+
+				}
+				if(possible == m)
+				{
+					printf("The request is taken\n");
+					for(int a=0;a<m;a++)
+					{
+						avail[0][a]=avail[0][a]-request[a];
+						alloc[no][a]+=request[a];
+						need[no][a] = max[no][a]-alloc[no][a];
+					}
+					
+
+				}
+				else
+				{
+					printf("The request cannot be made because request is greater than available\n");
+					printf("Displaying the safe sequence for normal values\n");
+				}
+
+			}
+			int available[10][10];
+			for(int av=0;av<n;av++)
+				for(int aj=0;aj<m;aj++)
+					available[av][aj]=avail[av][aj];
+			int array[n];
+			for(int b=0;b<n;b++)
+				array[b] = -1;
+			int count = 0;
+			while(count < n)
+			{
+				int c1 = 0;
+				for(int x=0;x<n;x++)
+				{
+					int yes = 1;
+					for(int b1=0;b1<n;b1++)
+					{
+						if(x == array[b1])
+							yes = 0;
+					}
+					int times = 0;
+					for(int ss=0;ss<m;ss++)
+					{
+					if(need[x][ss] <= available[0][ss])
+							times++;
+					}
+					if(yes == 1 && times == m)
+					{
+						array[count++] = x;
+						c1++;
+						for(int a=0;a<m;a++)
+						{
+							available[0][a]+=alloc[x][a];						
+						}
+							
+					}			
+
+				}
+				if(c1 == 0)
+				{
+					printf("Error deadlock unsafe sequence\n");
+					exit(0);
+				}
+			}
+			printf("The safe sequence is : <");
+			for(int p=0;p<n;p++)
+			{
+				printf("P%d	",array[p]);
+			}
+			printf(">\n");
+
+			
+
+		}
+	}
+
+
+}
+
+
+/*
+output :
+BANKERs ALGORITHM
+1.Read Data
+2.Print Data
+3.Safety Sequence
+4.exit
+Enter the option : 1
+Number of processes : 5
+Number of resources : 3
+Number of Available Instances of A : 3
+Number of Available Instances of B : 3
+Number of Available Instances of C : 2
+Maximum requirement for P0 : 7 5 3
+Maximum requirement for P1 : 3 2 2
+Maximum requirement for P2 : 9 0 2
+Maximum requirement for P3 : 2 2 2
+Maximum requirement for P4 : 4 3 3
+Allocated instances to P0 : 0 1 0
+Allocated instances to P1 : 2 0 0
+Allocated instances to P2 : 3 0 2
+Allocated instances to P3 : 2 1 1
+Allocated instances to P4 : 0 0 2
+Enter the option : 2
+pid	Alloc	Max	Need	Avail
+	A B C 	A B C 	A B C 	A B C 	
+P0	0 1 0 	7 5 3 	7 4 3 	3 3 2 
+P1	2 0 0 	3 2 2 	1 2 2 	
+P2	3 0 2 	9 0 2 	6 0 0 	
+P3	2 1 1 	2 2 2 	0 1 1 	
+P4	0 0 2 	4 3 3 	4 3 1 	
+Enter the option : 3
+Enter
+1 : To make request and check for safe sequence
+2 : to check only safe sequence
+your choice : 2
+The safe sequence is : <P1	P3	P4	P0	P2	>
+Enter the option : 3
+Enter
+1 : To make request and check for safe sequence
+2 : to check only safe sequence
+your choice : 1
+Enter the process no to request : 1
+Enter the new allocation request : 0 0 1
+The request is taken
+The safe sequence is : <P1	P3	P4	P0	P2	>
+Enter the option : 2
+pid	Alloc	Max	Need	Avail
+	A B C 	A B C 	A B C 	A B C 	
+P0	0 1 0 	7 5 3 	7 4 3 	3 3 1 
+P1	2 0 1 	3 2 2 	1 2 1 	
+P2	3 0 2 	9 0 2 	6 0 0 	
+P3	2 1 1 	2 2 2 	0 1 1 	
+P4	0 0 2 	4 3 3 	4 3 1 	
+Enter the option : 4
+*/
+ 
